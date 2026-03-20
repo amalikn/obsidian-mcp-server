@@ -43,6 +43,7 @@ const HTTP_PORT = config.mcpHttpPort;
 const HTTP_HOST = config.mcpHttpHost;
 const MCP_ENDPOINT_PATH = "/mcp";
 const MAX_PORT_RETRIES = 15;
+const HONO_ALREADY_SENT_HEADER = "x-hono-already-sent";
 
 // The transports map will store active sessions, keyed by session ID.
 // NOTE: This is an in-memory session store, which is a known limitation for scalability.
@@ -242,8 +243,12 @@ export async function startHttpTransport(
       );
     }
 
-    // Pass the request to the transport to handle.
-    return await transport.handleRequest(c.env.incoming, c.env.outgoing, body);
+    // The SDK writes directly to the Node response object. Tell Hono not to
+    // finalize the response a second time after the transport has handled it.
+    await transport.handleRequest(c.env.incoming, c.env.outgoing, body);
+    return new Response(null, {
+      headers: { [HONO_ALREADY_SENT_HEADER]: "true" },
+    });
   });
 
   // A reusable handler for GET and DELETE requests which operate on existing sessions.
@@ -260,8 +265,12 @@ export async function startHttpTransport(
       );
     }
 
-    // Let the transport handle the streaming (GET) or termination (DELETE) request.
-    return await transport.handleRequest(c.env.incoming, c.env.outgoing);
+    // The SDK writes directly to the Node response object. Tell Hono not to
+    // finalize the response a second time after the transport has handled it.
+    await transport.handleRequest(c.env.incoming, c.env.outgoing);
+    return new Response(null, {
+      headers: { [HONO_ALREADY_SENT_HEADER]: "true" },
+    });
   };
 
   app.get(MCP_ENDPOINT_PATH, handleSessionRequest);

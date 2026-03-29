@@ -246,9 +246,10 @@ export async function startHttpTransport(
     // The SDK writes directly to the Node response object. Tell Hono not to
     // finalize the response a second time after the transport has handled it.
     await transport.handleRequest(c.env.incoming, c.env.outgoing, body);
-    return new Response(null, {
+    c.res = new Response(null, {
       headers: { [HONO_ALREADY_SENT_HEADER]: "true" },
     });
+    return;
   });
 
   // A reusable handler for GET and DELETE requests which operate on existing sessions.
@@ -268,9 +269,10 @@ export async function startHttpTransport(
     // The SDK writes directly to the Node response object. Tell Hono not to
     // finalize the response a second time after the transport has handled it.
     await transport.handleRequest(c.env.incoming, c.env.outgoing);
-    return new Response(null, {
+    c.res = new Response(null, {
       headers: { [HONO_ALREADY_SENT_HEADER]: "true" },
     });
+    return;
   };
 
   app.get(MCP_ENDPOINT_PATH, handleSessionRequest);
